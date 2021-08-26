@@ -1,12 +1,38 @@
 #include <cstdint>
 #include <bitset>
+#include <vector>
+#include <fstream>
 
 struct iNESFile
 {
     std::uint32_t magic_number;
-    std::uint8_t PRG_size, CHR_size;
-    std::uint8_t mapper_id_and_flags;
-    
+    std::uint16_t mapper_id_and_flags;
+    std::uint8_t PRG_ram_page_count, flag_byte; 
+    std::vector<int8_t> PRG, CHR;
+
+    iNESFile(std::string fl_name)
+    {
+        std::ifstream fl(fl_name, std::ios::binary);
+        if(!fl)
+            throw std::runtime_error("Couldn't open file: " + fl_name);
+
+        std::uint8_t PRG_size, CHR_size;
+        std::uint8_t junk[6];
+        fl.read((char*)&magic_number, 4);
+        fl.read((char*)&PRG_size, 1);
+        fl.read((char*)&CHR_size, 1);
+        fl.read((char*)&mapper_id_and_flags, 2);
+        fl.read((char*)&PRG_ram_page_count, 1);
+        fl.read((char*)&flag_byte, 1);
+        fl.read((char*)junk, 6);
+
+        // Read in actual ROM data.
+        PRG.resize(PRG_size);
+        fl.read((char*)PRG.data(), PRG_size);
+
+        CHR.resize(CHR_size);
+        fl.read((char*)CHR.data(), CHR_size);
+    }
 };
 
 class NES
